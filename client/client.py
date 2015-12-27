@@ -2,11 +2,16 @@
 import lz4
 import json
 import re
+import os
+import glob
+import configparser
+
+from os.path import expanduser
 
 
 def read_jsonlz4(filename):
     with open(filename, mode='rb') as f:
-        if f.read(8) != b"mozLz40\0":
+        if f.read(8) != b'mozLz40\0':
             return
         raw_data = f.read()
         uncompressed = lz4.decompress(raw_data)
@@ -24,16 +29,39 @@ def recurse(data):
     return bookmarks
 
 
-http_p = re.compile('^http[s]?://')
-filename = "/home/justin/.mozilla/firefox/9shb6xj3.default/bookmarkbackups/bookmarks-2015-12-24_147_rDZlzXqiTshE+lOx9FDMxg==.jsonlz4"
+def read_profile(profile_path):
+    bookmark_backup_path = os.path.join(profile_path, 'bookmarkbackups')
 
-data = read_jsonlz4(filename)
-if not data:
-    print('Invalid bookmark file')
-    exit(1)
+    files = filter(os.path.isfile, glob.glob(os.path.join(bookmark_backup_path,
+                                                          '*.jsonlz4')))
+    files = [os.path.join(bookmark_backup_path, f) for f in files]
+    files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
 
-bookmarks = {}
-for c in data['children']:
-    if 'title' in c and c['title'] != '' and 'children' in c:
-        bookmarks[c['title']] = recurse(c['children'])
-print(json.dumps(bookmarks))
+    if len(files) < 0:
+        return
+
+    data = read_jsonlz4(files[0])
+    if not data:
+        print('Invalid bookmark file')
+        return
+
+    bookmarks = {}
+    for c in data['children']:
+        if 'title' in c and c['title'] != '' and 'children' in c:
+            bookmarks[c['title']] = recurse(c['children'])
+    return bookmarks
+
+if __name__ == '__main__':
+    bookmarks = {}
+    http_p = re.compile('^http[s]?://')
+    profile_p = re.compile('^Profile[0-9]+')
+
+    config = configparser.ConfigParser()
+    config.read(os.path.join(expanduser("~"), '.mozilla/firefox/profiles.ini'))
+
+    for section in config.sections():
+        if profile_p.match(section) and 'path' in config[section]:
+            bookmarks[section] = read_profile(os.path.join(
+                expanduser("~"), '.mozilla/firefox/', config[section]['path']))
+
+    print(json.dumps(bookmarks))

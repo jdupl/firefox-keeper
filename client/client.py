@@ -5,6 +5,7 @@ import re
 import os
 import glob
 import configparser
+import requests
 
 from os.path import expanduser
 
@@ -64,4 +65,6 @@ if __name__ == '__main__':
             bookmarks[section] = read_profile(os.path.join(
                 expanduser("~"), '.mozilla/firefox/', config[section]['path']))
 
-    print(json.dumps(bookmarks))
+    r = requests.post("http://localhost:5000/api",
+                      json=json.dumps({'profiles': bookmarks}))
+    print(r)

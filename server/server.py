@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
+import os
 import json
+import glob
+import importlib
 import multiprocessing as mp
 
 from flask import Flask, request, jsonify
-
-
-import time
 
 app = Flask(__name__)
 
@@ -37,10 +37,17 @@ def update():
     return jsonify({}), 200
 
 
+def find_mod_for_url(url):
+    global queue, handlers
+    for handler in handlers.values():
+        if handler.matches(url):
+            return handler
+    return handlers['html_default']
+
+
 def handle(task):
-    print('handling ', task)
-    time.sleep(5)
-    print('done handling ', task)
+    handler = find_mod_for_url(task[1])
+    print(handler.new(task))
 
 
 def safe_handle(queue):
@@ -49,13 +56,27 @@ def safe_handle(queue):
         try:
             handle(task)
         except Exception as e:
-            print("error: {} handling {}".format(e, task))
+            print("error: {} while handling {}".format(e, task))
 
 
 def setup():
-    global queue
+    global queue, handlers
+
+    handlers = {}
+    default_handler = None
+    mods = filter(os.path.isfile, glob.glob(os.path.join('handlers', '*.py')))
+
+    for mod_path in mods:
+        mod_name = os.path.splitext(os.path.split(mod_path)[-1])[0]
+        if mod_name == '__init__':
+            continue
+
+        print('Found module "%s"' % mod_name)
+        handlers[mod_name] = importlib.import_module('handlers.%s' % mod_name)
+
     queue = mp.Queue()
     pool = mp.Pool(5, safe_handle, (queue,))
+
     return app
 
 if __name__ == '__main__':

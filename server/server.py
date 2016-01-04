@@ -55,6 +55,15 @@ def read(item, parents=[]):
 
 
 def find_mod_for_url(url):
+    """
+    Return handler according to url
+
+    url:
+    Url used to match the correct handler
+
+    return:
+    The handler
+    """
     global queue, handlers
     for handler in handlers.values():
         if handler.matches(url):

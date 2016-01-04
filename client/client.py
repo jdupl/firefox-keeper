@@ -11,7 +11,13 @@ from os.path import expanduser
 
 
 def read_jsonlz4(filename):
+    """
+    Read mozilla jsonlz4 file
+
+    Returns json
+    """
     with open(filename, mode='rb') as f:
+        # Check for the mozilla lz4 header
         if f.read(8) != b'mozLz40\0':
             return
         raw_data = f.read()

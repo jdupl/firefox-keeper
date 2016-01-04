@@ -44,7 +44,6 @@ class ReadLZ4TestCase(unittest.TestCase):
 
     def test_read_jsonlz4_no_mozilla_header(self):
         path = 'fixtures/fixture.lz4'
-        expected = json.loads("{\"test\": \"test\"}")
         self.compress_fixture(path, False)
 
         actual = client.read_jsonlz4(path)

@@ -2,23 +2,26 @@ import re
 import os
 import subprocess
 
-
 pattern = re.compile('http[s]?://(?:www\.)?youtube\.com/watch\?v=(.*)')
 
 
-def new(task):
-    url = task[1]
-    dest = '/tmp/'
+class Handler():
 
-    m = pattern.match(url)
-    youtube_id = m.groups()[0].split('&')[0]  # TODO Better regex
+    def __init__(self, path):
+        self.path = path
 
-    try:
-        subprocess.check_call(['youtube-dl', youtube_id, '-o',
-                              os.path.join(dest, '%(title)s-%(id)s.%(ext)s')])
-    except KeyboardInterrupt as e:
-        raise e
+    def new(self, task):
+        url = task[1]
 
+        m = pattern.match(url)
+        youtube_id = m.groups()[0].split('&')[0]  # TODO Better regex
 
-def matches(url):
-    return pattern.match(url)
+        try:
+            subprocess.check_call(
+                ['youtube-dl', youtube_id, '-o', os.path.join(
+                    self.path, '%(title)s-%(id)s.%(ext)s')])
+        except KeyboardInterrupt as e:
+            raise e
+
+    def matches(self, url):
+        return pattern.match(url)

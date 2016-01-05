@@ -74,7 +74,7 @@ def find_mod_for_url(url):
 def handle(task):
     handler = find_mod_for_url(task[1])
     try:
-        print(handler.new(task))
+        handler.new(task)
     except KeyboardInterrupt as e:
         raise e
 
@@ -92,8 +92,13 @@ def update():
     return jsonify({}), 200
 
 
-def setup():
-    global handlers, pool
+def setup(config_env=None):
+    global handlers, pool, app
+
+    app.config.from_pyfile('config/config.cfg')
+
+    if config_env:
+        app.config.from_pyfile('config/config.%s.cfg' % config_env, silent=True)
 
     handlers = {}
     mods = filter(os.path.isfile, glob.glob(os.path.join('handlers', '*.py')))
@@ -104,10 +109,11 @@ def setup():
             continue
 
         print('Found module "%s"' % mod_name)
-        handlers[mod_name] = importlib.import_module('handlers.%s' % mod_name)
+        mod = importlib.import_module('handlers.%s' % mod_name)
+        handlers[mod_name] = getattr(mod, 'Handler')(app.config['ARCHIVE_PATH'])
 
     pool = ThreadPool(5)
     return app
 
 if __name__ == '__main__':
-    setup().run(debug=True)
+    setup('dev').run(debug=True)

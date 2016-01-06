@@ -5,7 +5,7 @@ import subprocess
 pattern = re.compile('http[s]?://(?:www\.)?youtube\.com/watch\?v=(.*)')
 
 
-class Handler():
+class YoutubeHandler():
 
     def __init__(self, path):
         self.path = path

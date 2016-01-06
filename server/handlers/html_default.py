@@ -1,7 +1,7 @@
 import subprocess
 
 
-class Handler():
+class WgetHandler():
 
     def __init__(self, path):
         self.path = path

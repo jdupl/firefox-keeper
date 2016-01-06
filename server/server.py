@@ -3,6 +3,7 @@ import os
 import json
 import glob
 import importlib
+import inspect
 
 from queue import Queue
 from threading import Thread
@@ -64,7 +65,6 @@ def find_mod_for_url(url):
     return:
     The handler
     """
-    global queue, handlers
     for handler in handlers.values():
         if handler.matches(url):
             return handler
@@ -94,7 +94,6 @@ def update():
 
 def setup(config_env=None):
     global handlers, pool, app
-
     app.config.from_pyfile('config/config.cfg')
 
     if config_env:
@@ -105,12 +104,14 @@ def setup(config_env=None):
 
     for mod_path in mods:
         mod_name = os.path.splitext(os.path.split(mod_path)[-1])[0]
-        if mod_name == '__init__':
+        mod = importlib.import_module('handlers.%s' % mod_name)
+        members = inspect.getmembers(mod, inspect.isclass)
+
+        if len(members) != 1:
             continue
 
-        print('Found module "%s"' % mod_name)
-        mod = importlib.import_module('handlers.%s' % mod_name)
-        handlers[mod_name] = getattr(mod, 'Handler')(app.config['ARCHIVE_PATH'])
+        handlers[mod_name] = members[0][1](app.config['ARCHIVE_PATH'])
+        print('Found module "%s"' % members[0][0])
 
     pool = ThreadPool(5)
     return app

@@ -9,6 +9,9 @@ from queue import Queue
 from threading import Thread
 from flask import Flask, request, jsonify
 
+from database import db_session, init_db, init_engine
+from models import Bookmark, Backup
+
 app = Flask(__name__)
 
 
@@ -114,6 +117,10 @@ def setup(config_env=None):
         print('Found module "%s"' % members[0][0])
 
     pool = ThreadPool(5)
+
+    init_engine(app.config['DATABASE_URI'])
+    init_db()
+
     return app
 
 if __name__ == '__main__':
